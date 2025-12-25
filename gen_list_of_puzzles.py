@@ -9,10 +9,10 @@ Generate a JSON file listing all .json filenames in Site/puzzles.
 Saves output to Site/puzzles/puzzles_list.json by default.
 """
 
-def list_json_files(directory: Path):
+def list_json_or_txt_files(directory: Path):
     if not directory.exists() or not directory.is_dir():
         raise FileNotFoundError(f"Directory not found: {directory}")
-    return sorted([p.name for p in directory.iterdir() if p.is_file() and p.suffix.lower() == '.json'])
+    return sorted([p.name for p in directory.iterdir() if p.is_file() and (p.suffix.lower() == '.json' or p.suffix.lower() == '.txt')])
 
 def make_lists_of_puzzles():
     p = argparse.ArgumentParser(description="Make a JSON of all .json filenames in Site/puzzles")
@@ -22,20 +22,32 @@ def make_lists_of_puzzles():
 
     directory = Path(args.dir)
     try:
-        files = list_json_files(directory)
+        files = list_json_or_txt_files(directory)
+        print(files)
     except FileNotFoundError as e:
         print(e, file=sys.stderr)
         sys.exit(1)
         
     filters = [5, 10]
     paths = ["ArchipelagoPicross\\ArchipelagoPicross\\worlds\\picross\\data", "Site\\lists"]
-    for p in paths:
-        for f in filters:
-            filesh = [fn for fn in files if fn.startswith(f"p_{f}_")]
-
+    for f in filters:
+        correct_files = []
+        files_filter = [fn for fn in files if fn.startswith(f"p_{f}_")]
+        for fn in files_filter:
+            splits = fn.split("_")
+            if int(splits[3]) > f:
+                correct_files.append(fn)
+            else:
+                if fn.endswith(".json") or fn.endswith(".txt"):
+                    (directory / fn).unlink()
+                    (Path(*["spoilers" if part == "puzzles" else part for part in directory.parts]) / fn).unlink()
+                    print(f"Deleted file {fn} for not meeting filter {f}")
+        print(f"Found {len(correct_files)} puzzles for filter {f} (rejected: {len(files_filter) - len(correct_files)})")
+        
+        for p in paths:
             out_path = Path(f"{p}\\pl_{f}.json")
             out_path.parent.mkdir(parents=True, exist_ok=True)
-            out_path.write_text(json.dumps(filesh, indent=2, ensure_ascii=False), encoding="utf-8")
+            out_path.write_text(json.dumps(correct_files, indent=2, ensure_ascii=False), encoding="utf-8")
             print(str(out_path))
 
 if __name__ == "__main__":
