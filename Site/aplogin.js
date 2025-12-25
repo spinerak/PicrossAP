@@ -1,0 +1,249 @@
+// Function to get URL parameters
+function getUrlParameter(name) {
+    name = name.replace(/[\[]/, '\\[').replace(/[\]]/, '\\]');
+    var regex = new RegExp('[\\?&]' + name + '=([^&#]*)');
+    var results = regex.exec(location.search);
+    return results === null ? '' : decodeURIComponent(results[1].replace(/\+/g, ' '));
+};
+
+// Set values from URL parameters or use default values
+
+let hostport = getUrlParameter('hostport');
+
+if(!getUrlParameter('hostport')){
+    hostport = getUrlParameter('hostname') + ":" + getUrlParameter('port');
+    if(hostport == ":"){
+        hostport = "";
+    }
+}
+
+document.getElementById('hostport').value = hostport || localStorage.getItem("hostport");
+
+document.getElementById('name').value = getUrlParameter('name') || localStorage.getItem("name");
+
+
+// server stuff:
+import {
+    Client
+} from "./archipelago.js";
+
+document.getElementById('loginbutton').addEventListener('click', function() {
+    startAP();
+});
+
+if(getUrlParameter('go') == 'LS'){
+    startAP();
+}
+
+document.getElementById('name').addEventListener('keypress', function(event) {
+    if (event.key === 'Enter') {
+        event.preventDefault(); // Prevent the default form submission
+        document.getElementById('loginbutton').click(); // Click the login button
+    }
+});
+
+document.getElementById('offline5').addEventListener('click', function() {
+    window.solo = true;
+    startAP(5);
+});
+
+document.getElementById('offline10').addEventListener('click', function() {
+    window.solo = true;
+    startAP(10);
+});
+
+let nclues = 0;
+function startAP(size = 0){
+    console.log("Starting AP login...");
+
+    localStorage.setItem("hostport", document.getElementById("hostport").value);
+    localStorage.setItem("name", document.getElementById("name").value);
+
+
+    var client = null;
+    var apstatus = "?";
+    window.is_connected = false;
+
+
+    function connectToServer(firsttime = true) {
+
+        if(window.solo){
+            function startWithPuzzle(puzzle_name){
+                window.chosenPuzzle = puzzle_name;
+                console.log("Chosen offline puzzle:", chosenPuzzle);
+                window.startEverything(window.chosenPuzzle);
+                document.getElementById("login-container").style.display = "none";
+                document.getElementById("app").style.display = "flex";
+                window.is_connected = true;
+
+                const displayName = chosenPuzzle.replace(/\.json$/i, '');
+                const puzzleNameEl = document.getElementById('puzzleName');
+                puzzleNameEl.textContent = displayName;
+
+                const url = "spoilers/" + encodeURIComponent(displayName) + ".txt";
+                const fullUrl = new URL(url, window.location.href).href;
+                console.log("Spoiler URL: " + fullUrl);
+
+                document.getElementById('labelMode').textContent = "Solo";
+
+                gotClue();
+            }
+
+            let custom_puzzle = getUrlParameter('puzzle');
+            if(custom_puzzle != ""){
+                console.log("Using custom puzzle from URL:", custom_puzzle);
+                startWithPuzzle(custom_puzzle+".json");
+            }else{
+                let plname = "lists/pl_"+size+".json";
+                console.log("Loading puzzle list:", plname);
+                fetch(plname)
+                    .then(res => res.json())
+                    .then(list => {
+                        const chosenPuzzle = Array.isArray(list) && list.length
+                            ? list[Math.floor(Math.random() * list.length)]
+                            : list;
+                        startWithPuzzle(chosenPuzzle);
+                    })
+                    .catch(err => console.error("Failed to load puzzle list:", err));
+            }
+
+            return;
+        }
+        
+        document.getElementById('loginbutton').style.backgroundColor = "orange";
+
+        const hostport = localStorage.getItem("hostport");
+        const name = localStorage.getItem("name");
+        const password = document.getElementById("password").value;
+
+        console.log("Connecting to server...");
+        client = new Client();
+        client.items.on("itemsReceived", receiveditemsListener);
+        client.socket.on("connected", connectedListener);
+        client.socket.on("disconnected", disconnectedListener);
+        
+        
+        client
+        .login(hostport, name, "Picross", {password: password})
+            .then(() => {
+                console.log("Connected to the server");
+            })
+            .catch((error) => {
+                console.log("Failed to connect", error);
+                document.getElementById('error-label').innerText = error + "\n Common remedies: refresh room and check login info.";
+            });
+
+    }
+
+    const receiveditemsListener = (items, index) => {
+        newItems(items, index);
+    };
+
+    var lastindex = 0;
+    function newItems(items, index) {
+        if (items && items.length) {
+            if (index > lastindex) {
+                alert("Something strange happened, you should have received more items already... Let's reconnect...");
+                console.log("Expected index:", lastindex, "but got:", index, items);
+            }
+            var received_items = [];
+            for (let i = lastindex - index; i < items.length; i++) {
+                const item = items[i]; // Get the current item
+                received_items.push([item.toString(), i, index]); // Add the item name to the 'items' array
+            }
+            openItems(received_items)
+            lastindex = index + items.length;
+        } else {
+            console.log("No items received in this update...");
+        }
+    }
+
+    function openItems(items) {
+        console.log(items)
+        for (let i = 0; i < items.length; i++) {
+            let item = items[i][0];
+            if (item == "Picross clues") {
+                gotClue();
+            }
+        }
+    }
+
+    function gotClue(){
+        console.log("Received a Picross clue! Total clues: ", nclues);
+        applyUnlocksForScore(nclues);
+        nclues += 1;
+    }
+
+    const connectedListener = (packet) => {
+        document.getElementById("login-container").style.display = "none";
+        document.getElementById("app").style.display = "flex";
+
+        apstatus = "AP: Connected";
+        console.log("Connected packet: ", packet);
+
+        const puzzle_name = packet.slot_data.puzzle;
+
+        const displayName = puzzle_name.replace(/\.json$/i, '');
+        const puzzleNameEl = document.getElementById('puzzleName');
+        puzzleNameEl.textContent = displayName;
+        
+        const url = "spoilers/" + encodeURIComponent(displayName) + ".txt";
+        const fullUrl = new URL(url, window.location.href).href;
+
+        console.log("--------------------------------");
+        console.log("SPOILER LOG URL: " + fullUrl);
+        console.log("--------------------------------");
+
+        document.getElementById('labelMode').textContent = "AP";
+        
+        window.startEverything(puzzle_name);
+
+        window.is_connected = true;
+
+        // Add the event listener and keep a reference to the handler
+        window.beforeUnloadHandler = function (e) {
+            const confirmationMessage = "Are you sure you want to leave this page?";
+            e.preventDefault();
+            e.returnValue = confirmationMessage;
+            return confirmationMessage;
+        };
+        window.addEventListener("beforeunload", window.beforeUnloadHandler);
+    };
+
+    const disconnectedListener = (packet) => {
+        window.is_connected = false;
+        apstatus = "AP: Disconnected. Progress saved, please refresh.";
+        alert("Disconnected from the server. Please refresh.");
+        window.removeEventListener("beforeunload", window.beforeUnloadHandler);
+    };
+
+    var highScore = 0
+    function findAndDetermineChecks(total){
+        sendCheck(67 + total);
+    }
+    window.findAndDetermineChecks = findAndDetermineChecks;
+
+    function sendCheck(key){
+        if(window.is_connected){
+            if(window.solo){
+                gotClue();
+                return;
+            }
+            client.check(parseInt(key));
+            console.log("Sent check for ", key);
+        }
+    }
+    function sendGoal(){
+        if(window.solo){
+            return;
+        }
+        client.goal();
+        window.removeEventListener("beforeunload", window.beforeUnloadHandler);
+    }
+
+    window.sendCheck = sendCheck;
+    window.sendGoal = sendGoal;
+
+    console.log("0.0.1")
+    connectToServer();
+}
