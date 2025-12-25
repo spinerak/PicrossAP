@@ -1,5 +1,4 @@
 
-let unlock_order = null;
 function startEverything(pathToPuzzle){
 
     let top_clues, left_clues, solution;
@@ -19,28 +18,29 @@ function startEverything(pathToPuzzle){
             left_clues = data.L || [];
             solution = data.S || [];
             // unlock/giveaway may be named "give_away" in your example
-            unlock_order = data.G || {};
-            console.log('Loaded puzzle', top_clues, left_clues, solution, unlock_order);
+            window.unlock_order = data.G || {};
+            console.log('Loaded puzzle', top_clues, left_clues, solution, window.unlock_order);
         }catch(e){
             console.warn('Failed to load puzzle, using embedded fallback clues:', e);
             top_clues = top_clues || [];
             left_clues = left_clues || [];
             solution = solution || [];
-            unlock_order = unlock_order || null;
+            window.unlock_order = window.unlock_order || null;
         }
     })();
 
-    // set initial next-unlock display safely (unlock_order may be null or an object, not have .keys())
+    // set initial next-unlock display safely (window.unlock_order may be null or an object, not have .keys())
     (function(){
         let nextCnt = '—';
-        if(unlock_order && typeof unlock_order === 'object'){
-            const keys = Object.keys(unlock_order)
+        if(window.unlock_order && typeof window.unlock_order === 'object'){
+            const keys = Object.keys(window.unlock_order)
                 .map(k=>Number(k))
                 .filter(k=>!isNaN(k))
                 .sort((a,b)=>a-b);
             if(keys.length) nextCnt = String(keys[1]);
         }
         document.getElementById('nextUnlockCount').innerText = nextCnt;
+
     })();
 
     const CLUES = [
@@ -63,6 +63,7 @@ function startEverything(pathToPuzzle){
     const resetBtn = document.getElementById('resetBtn');
     const correctCountEl = document.getElementById('correctCount');
     const nextUnlockCountEl = document.getElementById('nextUnlockCount');
+    const inLogicCountEl = document.getElementById('inLogicCount');
 
     let maxTopRows = Math.max(0, ...topClues.map(a=>a.length));
     let maxLeftNumbers = Math.max(0, ...leftClues.map(a=>a.length));
@@ -303,22 +304,22 @@ function startEverything(pathToPuzzle){
     }
 
     /* Apply unlocks for a given score value.
-    unlock_order can be an object or array. Each unlock entry is expected to have at least:
+    window.unlock_order can be an object or array. Each unlock entry is expected to have at least:
         [side, lineIndex, ...]
     side: 0 => top (column), 1 => left (row).
     We'll reveal the entire clue line when unlocking.
     */
     function applyUnlocksForScore(index){
         let kp = null;
-        if(Array.isArray(unlock_order)){
-            kp = unlock_order[index];
-        } else if(unlock_order && typeof unlock_order === 'object'){
-            const keys = Object.keys(unlock_order)
+        if(Array.isArray(window.unlock_order)){
+            kp = window.unlock_order[index];
+        } else if(window.unlock_order && typeof window.unlock_order === 'object'){
+            const keys = Object.keys(window.unlock_order)
                 .map(k=>Number(k))
                 .filter(k=>!isNaN(k))
                 .sort((a,b)=>a-b);
             const key = keys[index];
-            if(key !== undefined) kp = unlock_order[String(key)];
+            if(key !== undefined) kp = window.unlock_order[String(key)];
         }
         if(!kp) return;
         // kp may be an array of unlock tuples
@@ -384,6 +385,7 @@ function startEverything(pathToPuzzle){
         if(!solution || !Array.isArray(solution) || solution.length !== ROWS){
             correctCountEl.textContent = '—';
             nextUnlockCountEl.textContent = '—';
+            inLogicCountEl.textContent = '—';
             return;
         }
         let correct = 0;
@@ -401,10 +403,10 @@ function startEverything(pathToPuzzle){
             highScore = correct;
             // console.log('New high score:', highScore);
             // lookup score in unlock order and unlock hints
-            if(window.is_connected && unlock_order){
-                // if highscore is one of the keys in unlock_order, find the how many'th that is,
+            if(window.is_connected && window.unlock_order){
+                // if highscore is one of the keys in window.unlock_order, find the how many'th that is,
                 // then call findAndDetermineChecks with that index
-                const scores = Object.keys(unlock_order).map(k=>Number(k)).sort((a,b)=>a-b);
+                const scores = Object.keys(window.unlock_order).map(k=>Number(k)).sort((a,b)=>a-b);
                 // console.log(scores);
                 if(scores.includes(highScore)){
                     const index = scores.indexOf(highScore);
