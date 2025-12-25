@@ -82,7 +82,9 @@ function startAP(size = 0){
 
                 const url = "spoilers/" + encodeURIComponent(displayName) + ".txt";
                 const fullUrl = new URL(url, window.location.href).href;
-                console.log("Spoiler URL: " + fullUrl);
+                console.log("--------------------------------");
+                console.log("SPOILER LOG URL: " + fullUrl);
+                console.log("--------------------------------");
 
                 document.getElementById('labelMode').textContent = "Solo";
 
