@@ -52,6 +52,11 @@ document.getElementById('offline10').addEventListener('click', function() {
     startAP(10);
 });
 
+document.getElementById('offline15').addEventListener('click', function() {
+    window.solo = true;
+    startAP(15);
+});
+
 
 let nclues = 0;
 function startAP(size = 0){
