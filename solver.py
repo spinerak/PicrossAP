@@ -109,11 +109,10 @@ def build_up_game(clues):
         "marked": marked,
         "solution": sol,
     })
-
     step = 1
     positions = collect_positions(masked)
     with tqdm(total=len(positions)) as pbar:
-        while positions:
+        while marked < len(clues[0]) * len(clues[1]):
             side, li, pi = choice(positions)
             # install the real value from orig into masked
             value = orig[side][li][pi]
@@ -123,7 +122,6 @@ def build_up_game(clues):
             top_mask = [list(cl) for cl in masked[0]]
             left_mask = [list(cl) for cl in masked[1]]
             solution, marked = solve_picross_simple([top_mask, left_mask])
-
             steps.append({
                 "step": step,
                 "changed": (side, li, pi, value),
@@ -133,7 +131,6 @@ def build_up_game(clues):
             step += 1
             positions = collect_positions(masked)
             pbar.update(1)
-
     return steps, solution
 
 def showSolution(solution):
@@ -152,19 +149,18 @@ def showSolution(solution):
 
 if __name__ == "__main__":
     random_seed = random.randint(0, 1000000)
-    # random_seed = 268055
     print("Using random seed:", random_seed)
     random.seed(random_seed)
     
     am_puzzles = 0 # don't change ><
     
     start = 1
-    max_puzzles = 10
+    max_puzzles = 1
     
     with tqdm(total=max_puzzles) as pbar:
         while am_puzzles < max_puzzles:
             
-            n = random.choices([5,10,15,20], weights=[0,0,1,0])[0]
+            n = random.choices([5,10,15,20], weights=[0,1,0,0])[0]
             x = n
             y = n
 
@@ -191,7 +187,6 @@ if __name__ == "__main__":
             
             steps = build_up[0]
 
-                
             give_away = {}
             number_possible = 0
             
@@ -200,6 +195,8 @@ if __name__ == "__main__":
                     give_away[number_possible] = []
                 give_away[number_possible] += [info["changed"]]
                 number_possible = info["marked"]
+            if number_possible not in give_away:
+                give_away[number_possible] = []
                 
             output = {
                 "T": top_clues,
@@ -207,6 +204,13 @@ if __name__ == "__main__":
                 "S": steps[-1]["solution"],
                 "G": give_away
             }
+            
+            if int(list(output['G'].keys())[-1]) < x * y:
+                print("Puzzle not fully solved!!!!!")
+                print(output)
+                raise Exception("Puzzle not fully solved")
+            
+                exit()
             
             # make puzzles and spoilers directories if they don't exist
             Path("Site/puzzles").mkdir(exist_ok=True)
