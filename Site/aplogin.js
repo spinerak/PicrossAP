@@ -70,6 +70,21 @@ function startAP(size = 0){
     var apstatus = "?";
     window.is_connected = false;
 
+    
+    // Timer label updater (updates every second)
+    if (window.timerInterval) clearInterval(window.timerInterval);
+    let timerStart = Date.now();
+    function tickTimer() {
+        const el = document.getElementById('timerLabel');
+        if (!el) return;
+        const totalSec = Math.floor((Date.now() - timerStart) / 1000);
+        const mm = String(Math.floor(totalSec / 60)).padStart(2, '0');
+        const ss = String(totalSec % 60).padStart(2, '0');
+        el.textContent = mm + ':' + ss;
+    }
+    tickTimer();
+    window.timerInterval = setInterval(tickTimer, 1000);
+
 
     function connectToServer(firsttime = true) {
 
@@ -178,6 +193,7 @@ function startAP(size = 0){
     }
 
     function gotClue(){
+        console.log("Got clue ", nclues);
         applyUnlocksForScore(nclues);
         nclues += 1;
         const inLogic = (() => {
@@ -253,6 +269,7 @@ function startAP(size = 0){
     function sendCheck(key){
         if(window.is_connected){
             if(window.solo){
+                console.log("Solo mode, pretending to check ", key);
                 gotClue();
                 return;
             }
@@ -261,6 +278,8 @@ function startAP(size = 0){
         }
     }
     function sendGoal(){
+        //stop timer window.timerInterval
+        clearInterval(window.timerInterval);
         if(window.solo){
             return;
         }
