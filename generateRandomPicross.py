@@ -90,3 +90,16 @@ def generate_random_clues(x, y, Mmax, Amax, grid=None):
     #     f.write(f"{r}")
     #     f.write('\n')    
     #     f.write(f"{c}")
+    
+if __name__ == "__main__":
+    x = 10
+    y = 10
+    Mmax = 4
+    Amax = 2.0
+    clues = generate_random_clues(x, y, Mmax, Amax)
+    if clues:
+        row_clues, col_clues = clues
+        print("Row Clues:", row_clues)
+        print("Column Clues:", col_clues)
+    else:
+        print("Failed to generate clues within constraints.")
