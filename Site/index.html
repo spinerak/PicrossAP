@@ -20,12 +20,15 @@
               <div class="title">Nonogram</div>
 
               <fieldset>
-                <legend style="padding:0 6px;font-weight:bold;">Controls:</legend>
+                <legend style="font-weight:bold;">Controls:</legend>
                   <div class="mode-row" role="group" aria-label="modes">
+                    <div style="display:grid;grid-template-columns:repeat(3,auto);gap:8px;justify-items:center;">
                       <button id="modeMouse" class="btn active" title="Mouse mode">🖱️</button>
                       <button id="modeFill" class="btn" title="Black cells (filled)">⚫</button>
                       <button id="modeMark" class="btn" title="White cells (marked)">⚪</button>
                       <button id="modeErase" class="btn" title="Erase cells (clear)">🧽</button>
+                      <button id="modeCross" class="btn" title="Cross cells (marked)">✏️</button>
+                    </div>
                   </div>
               </fieldset>
 

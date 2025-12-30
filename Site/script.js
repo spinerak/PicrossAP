@@ -1,4 +1,6 @@
 
+const audio1 = new Audio('b1.ogg');
+
 function startEverything(pathToPuzzle) {
 
     
@@ -53,6 +55,7 @@ function startEverything(pathToPuzzle) {
     const btnFill = document.getElementById('modeFill'); // Black
     const btnMark = document.getElementById('modeMark'); // White
     const btnErase = document.getElementById('modeErase'); // Erase
+    const btnCross = document.getElementById('modeCross'); // Cross
     const modeLabel = document.getElementById('modeLabel');
     const resetBtn = document.getElementById('resetBtn');
 
@@ -292,6 +295,7 @@ function startEverything(pathToPuzzle) {
     function applyCellClass(el, state){
         el.classList.toggle('filled', state===1);
         el.classList.toggle('marked', state===3);
+        el.classList.toggle('cross', state===0.5);
     }
 
     /* Reveal helper: updates revealed arrays and DOM */
@@ -380,6 +384,9 @@ function startEverything(pathToPuzzle) {
     function decideActionFromEvent(ev){
         if(drawAction === 'mouse'){
             if(ev.pointerType === 'touch' || ev.pointerType === 'pen' || ev.button === 0){
+                if (ev.shiftKey){
+                    return 'cross';
+                }
                 return 'black';
             }
             if(ev.button === 1) return 'erase'; // middle
@@ -398,20 +405,28 @@ function startEverything(pathToPuzzle) {
         if(r === lastCellSetR && c === lastCellSetC && action === lastCellSetV){
             return;
         }
+        if(action != drawActionMouse){
+            console.log('skipping setCellState due to action mismatch', action, drawActionMouse);
+            return;
+        }
         lastCellSetR = r;
         lastCellSetC = c;
         lastCellSetV = action;
 
-        // play b1.ogg
-        const audio = new Audio('b1.ogg');
-        audio.volume = .4;
-        audio.play();
-        
         const prev = cells[r][c];
+        if(action !== 'erase' && replacing_color !== prev){
+            return;
+        }
+
+        // play b1.ogg
+        audio1.volume = .4;
+        audio1.play();
+        
         let newState;
         if(action === 'black') newState = 1;
         else if(action === 'white') newState = 3;
         else if(action === 'erase') newState = 0;
+        else if(action === 'cross') newState = 0.5;
         else return;
         if(prev === newState) return;
         cells[r][c] = newState;
@@ -563,6 +578,8 @@ function startEverything(pathToPuzzle) {
     window.updateNextUnlockCount = updateNextUnlockCount;
 
     let drawActionMouse = 'black';
+    let replacing_color = null;
+    
     /* Pointer handlers */
     function onPointerDown(ev){
         ev.preventDefault();
@@ -572,6 +589,7 @@ function startEverything(pathToPuzzle) {
         drawActionMouse = decideActionFromEvent(ev);
         const r = Number(ev.currentTarget.dataset.r);
         const c = Number(ev.currentTarget.dataset.c);
+        replacing_color = cells[r][c];
         setCellState(r,c,drawActionMouse);
         updateModeUILabel();
     }
@@ -616,12 +634,14 @@ function startEverything(pathToPuzzle) {
         btnFill.classList.toggle('active', m==='black');
         btnMark.classList.toggle('active', m==='white');
         btnErase.classList.toggle('active', m==='erase');
+        btnCross.classList.toggle('active', m==='cross');
         updateModeUILabel();
     }
     btnMouse.addEventListener('click', ()=>setMode('mouse'));
     btnFill.addEventListener('click', ()=>setMode('black'));
     btnMark.addEventListener('click', ()=>setMode('white'));
     btnErase.addEventListener('click', ()=>setMode('erase'));
+    btnCross.addEventListener('click', ()=>setMode('cross'));
     function updateModeUILabel(){
         let label = 'Black';
         if(drawAction === 'white') label = 'White';
@@ -632,6 +652,7 @@ function startEverything(pathToPuzzle) {
         btnFill.classList.toggle('active', drawAction === 'black');
         btnMark.classList.toggle('active', drawAction === 'white');
         btnErase.classList.toggle('active', drawAction === 'erase');
+        btnCross.classList.toggle('active', drawAction === 'cross');
     }
 
     /* Clue click handler: toggles "done" and fades item a bit */

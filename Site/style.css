@@ -17,7 +17,7 @@
 
     --gap: calc(var(--cell-size) * 0.1);
     --clue-font: calc(var(--cell-size) * 0.6);
-    --five-cell-border: calc(var(--cell-size) * 0.1);
+    --five-cell-border: calc(var(--cell-size) * 0.05);
 }
 
 html,body{
@@ -178,19 +178,29 @@ html,body{
 }
 .cell:hover{transform:translateY(-2px)}
 .cell.filled{
-    background:linear-gradient(180deg,#0b0b0b,#141414);
-    box-shadow: inset 0 1px 0 rgba(255,255,255,0.02), 0 6px 18px rgba(0,0,0,0.6);
+    background:linear-gradient(180deg,#3c3c3c,#141414);
+    /* box-shadow: inset 0 1px 0 rgba(255,255,255,0.02), 0 3px 6px rgba(0,0,0,0.6); */
 }
 .cell.marked{
-    background:linear-gradient(180deg,#ccccccc0,#a2a2a2c0);
-    box-shadow: inset 0 1px 0 rgba(207,207,207,0.02), 0 6px 18px rgba(207,207,207,0.6);
+    background:linear-gradient(180deg,#cccccc,#6f6f6f);
+    /* box-shadow: inset 0 1px 0 rgba(207,207,207,0.02), 0 3px 6px rgba(207,207,207,0.6); */
+}
+.cell.cross::after {
+    content: "?"; /* Unicode for "x" */
+    font-size: calc(var(--clue-font) * 0.8);
+    line-height: 1;
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
 }
 
 /* clue cells inside grid */
 .clue-cell {
     font-size: var(--clue-font);
     font-weight: 500;
-    color: var(--muted);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -198,8 +208,8 @@ html,body{
     user-select: none;
     transition: opacity 0.18s ease, transform 0.12s ease;
     border-radius: 6px;
-    color: rgba(0, 0, 0, 1);
-    background: rgba(0, 0, 0, 0.06);
+    color: rgb(255, 255, 255);
+    background: linear-gradient(180deg,#3c3c3c,#141414);
     box-sizing: border-box; /* Add this line */
 }
 /* top clues look like small text on transparent bg */
@@ -207,14 +217,15 @@ html,body{
 /* left clues now use the same column sizing as top/cell columns so gaps match */
 .clue-cell.left{ width:var(--cell-size); height:var(--cell-size); }
 /* clicked/done */
-.clue-cell.done{ opacity:.36; transform:translateY(1px) scale(.98); color:rgba(124,227,167,0.9); }
+.clue-cell.done{ opacity:.36; transform:translateY(1px) scale(.98); }
 .clue-cell.new{
-    background: linear-gradient(180deg, rgba(124,227,167,0.18), rgba(124,227,167,0.03));
+        /* background: linear-gradient(180deg,#3c3c3c,#054d02); */
+        color:rgb(137, 255, 137)
 }
 
 /* Major gridline styles (every 5 cells, first after clue area) */
-.cell.major-v, .clue-cell.major-v { border-right: var(--five-cell-border) solid rgba(255,255,255,0.08); }
-.cell.major-h, .clue-cell.major-h { border-bottom: var(--five-cell-border)  solid rgba(255,255,255,0.08); }
+.cell.major-v, .clue-cell.major-v { border-right: var(--five-cell-border) solid #919191; }
+.cell.major-h, .clue-cell.major-h { border-bottom: var(--five-cell-border)  solid #919191; }
 .cell.major-v.major-h, .clue-cell.major-v.major-h { outline: 0; /* both applied */ }
 .cell.major-v.major-h2, .clue-cell.major-v.major-h2 { outline: 0; /* both applied */ }
 

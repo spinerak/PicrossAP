@@ -1,3 +1,6 @@
+
+const audio2 = new Audio('b2.ogg');
+
 // Function to get URL parameters
 function getUrlParameter(name) {
     name = name.replace(/[\[]/, '\\[').replace(/[\]]/, '\\]');
@@ -203,9 +206,8 @@ function startAP(size = 0){
         })();
         document.getElementById('inLogicCount').innerText = inLogic !== undefined ? inLogic : '—';
         // play b1.ogg
-        const audio = new Audio('b2.ogg');
-        audio.volume = .4;
-        audio.play();
+        audio2.volume = .4;
+        audio2.play();
     }
 
     const connectedListener = (packet) => {
@@ -282,13 +284,15 @@ function startAP(size = 0){
         }
     }
     function sendGoal(){
-        //stop timer window.timerInterval
-        clearInterval(window.timerInterval);
-        if(window.solo){
-            return;
+        if(window.is_connected){
+            //stop timer window.timerInterval
+            clearInterval(window.timerInterval);
+            if(window.solo){
+                return;
+            }
+            client.goal();
+            window.removeEventListener("beforeunload", window.beforeUnloadHandler);
         }
-        client.goal();
-        window.removeEventListener("beforeunload", window.beforeUnloadHandler);
     }
 
     window.sendCheck = sendCheck;
