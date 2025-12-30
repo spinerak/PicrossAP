@@ -47,6 +47,7 @@ function startEverything(pathToPuzzle) {
 
 
     /* UI elements */
+    const boardWrap = document.getElementById('boardWrap');
     const boardGrid = document.getElementById('boardGrid');
     const btnMouse = document.getElementById('modeMouse'); // New mouse mode button
     const btnFill = document.getElementById('modeFill'); // Black
@@ -63,10 +64,48 @@ function startEverything(pathToPuzzle) {
     const root = document.documentElement;
     root.style.setProperty('--cols', COLS);
     root.style.setProperty('--rows', ROWS);
+    root.style.setProperty('--left-clue-cols', maxLeftNumbers);
     root.style.setProperty('--top-clue-rows', maxTopRows);
-    const cellSizePx = parseInt(getComputedStyle(root).getPropertyValue('--cell-size')) || 40;
-    const leftWidthPx = Math.max(48, maxLeftNumbers * cellSizePx);
-    root.style.setProperty('--left-clue-width', leftWidthPx + 'px');
+    console.log(COLS, ROWS, maxLeftNumbers, maxTopRows);
+    // compute cell size in JS and set as static px value
+    function updateCellSize(){
+        const controlsEl = document.getElementById('controls') || document.querySelector('.controls');
+        const controlsW = controlsEl ? controlsEl.getBoundingClientRect().width : 0;
+        const CARD_PADDING = 16; // px padding around the card/container
+        const CARD_GAP = 12; // px gap between controls and board
+        const controlsH = controlsEl ? controlsEl.getBoundingClientRect().height : 0;
+        const mqSmallPortrait = window.matchMedia && window.matchMedia('(max-width: 834px) and (orientation: portrait)').matches;
+        let wrapW, wrapH;
+        if(mqSmallPortrait){
+            // In small portrait, don't subtract controlsW and CARD_GAP from width;
+            // subtract controlsH and CARD_GAP from height.
+            wrapW = Math.max(0, window.innerWidth - (CARD_PADDING * 2));
+            wrapH = Math.max(0, window.innerHeight - controlsH - (CARD_PADDING * 2) - CARD_GAP);
+        } else {
+            wrapW = Math.max(0, window.innerWidth - controlsW - (CARD_PADDING * 2) - CARD_GAP);
+            wrapH = Math.max(0, window.innerHeight - (CARD_PADDING * 2));
+        }
+
+        console.log('wrap size', wrapW, wrapH);
+        let colsTotal = ((COLS || 0) + (maxLeftNumbers || 0)) || 1;
+        // colsTotal += 1;
+        let rowsTotal = ((ROWS || 0) + (maxTopRows || 0)) || 1;
+        // rowsTotal += 1;
+        const cellSizePx = Math.max(8, Math.floor(Math.min(wrapW / colsTotal, wrapH / rowsTotal))) / 1.15; // floor to integer, min 8px
+        root.style.setProperty('--cell-size', cellSizePx + 'px');
+        console.log('calculation:', wrapW, '/', colsTotal, 'and', wrapH, '/', rowsTotal, '=> cell size', cellSizePx);
+    }
+
+    // initial call
+    updateCellSize();
+    // call on window resize
+    window.addEventListener('resize', updateCellSize);
+    // call on boardGrid resize if supported
+    // if (typeof ResizeObserver !== 'undefined' && boardGrid){
+    //     const ro = new ResizeObserver(updateCellSize);
+    //     ro.observe(boardGrid);
+    // }
+
 
     /* State: 0 empty, 1 filled(black), 3 marked (white) */
     let cells = new Array(ROWS).fill(0).map(()=>new Array(COLS).fill(0));
@@ -243,7 +282,9 @@ function startEverything(pathToPuzzle) {
         }
         // Disable context menu on board
         boardGrid.addEventListener('contextmenu', e=>e.preventDefault());
-
+        boardWrap.addEventListener('contextmenu', e=>e.preventDefault());
+        updateCellSize();
+        setTimeout(()=>updateCellSize(),1000);
 
     }
 
@@ -421,9 +462,9 @@ function startEverything(pathToPuzzle) {
                     window.findAndDetermineChecks(index);
                     
                     if(highScore === scores[scores.length - 1]){
-                        if(COLS*ROWS > 64){
+                        // if(COLS*ROWS > 64){
                             showRoss();
-                        }
+                        // }
                         window.sendGoal();
                     }
                 }

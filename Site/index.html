@@ -16,23 +16,25 @@
 <div class="app" id="app">
     <div class="card" id="appCard">
         <div class="controls">
-            <div class="title">Nonogram</div>
+            <div>
+              <div class="title">Nonogram</div>
 
-            <fieldset style="border:1px solid #ccc;padding:8px;border-radius:6px;margin-top:2px;">
-              <legend style="padding:0 6px;font-weight:bold;">Controls:</legend>
-                <div class="mode-row" role="group" aria-label="modes">
-                    <button id="modeMouse" class="btn active" title="Mouse mode">🖱️</button>
-                    <button id="modeFill" class="btn" title="Black cells (filled)">⚫</button>
-                    <button id="modeMark" class="btn" title="White cells (marked)">⚪</button>
-                    <button id="modeErase" class="btn" title="Erase cells (clear)">🧽</button>
-                </div>
-            </fieldset>
+              <fieldset>
+                <legend style="padding:0 6px;font-weight:bold;">Controls:</legend>
+                  <div class="mode-row" role="group" aria-label="modes">
+                      <button id="modeMouse" class="btn active" title="Mouse mode">🖱️</button>
+                      <button id="modeFill" class="btn" title="Black cells (filled)">⚫</button>
+                      <button id="modeMark" class="btn" title="White cells (marked)">⚪</button>
+                      <button id="modeErase" class="btn" title="Erase cells (clear)">🧽</button>
+                  </div>
+              </fieldset>
 
-            <div class="legend">Mode: <span id="modeLabel">Black</span>  |  Timer: <span id="timerLabel">00:00</span></div>
+              <div class="legend">Mode: <span id="modeLabel">Black</span>  |  Timer: <span id="timerLabel">00:00</span></div>
 
-            <div style="display:flex;gap:8px;margin-top:8px;">
-                <button id="resetBtn" class="btn reset">Reset</button>
-                <button id="helpBtn" class="btn reset">Help</button>
+              <div style="display:flex;gap:8px;">
+                  <button id="resetBtn" class="btn reset">Reset</button>
+                  <button id="helpBtn" class="btn reset">Help</button>
+              </div>
             </div>
             
 
@@ -44,7 +46,7 @@
 
         </div>
 
-        <div class="board-wrap">
+        <div class="board-wrap" id = "boardWrap" >
             <!-- unified board grid: clues are rendered as grid items so they align perfectly with cells -->
             <div id="boardGrid" aria-hidden="false"></div>
         </div>
@@ -69,7 +71,7 @@
             <input type="password" id="password" name="password" class="login-input" value="" placeholder="Leave blank if no password">
             <input type="submit" value="Login" id="loginbutton" class="login-submit">
             <label id="error-label" class="login-label" style="color: red;"></label>
-            <fieldset style="border:1px solid #ccc;padding:8px;border-radius:6px;margin-top:8px;">
+            <fieldset>
                 <legend style="padding:0 6px;font-weight:bold;">Play solo:</legend>
                 <div style="display:flex;gap:8px;">
                     <button type="button" id="offline5" class="login-submit" style="background-color:#7a3434;">5x5</button>
