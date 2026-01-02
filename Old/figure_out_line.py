@@ -9,7 +9,7 @@ def get_sure_squares(clues, grid_line):
             elif len(clues) * 2 - 1 == len(grid_line):
                 return [1 if i % 2 == 0 else 0 for i in range(len(grid_line))]
             else:
-                print("Unsolvable line detected with all-unknown clues and empty line", clues, grid_line)
+                # print("Unsolvable line detected with all-unknown clues and empty line", clues, grid_line)
                 return False
             
     def all_configurations(clues, m, max_QM):        

@@ -24,15 +24,18 @@
                   <div class="mode-row" role="group" aria-label="modes">
                     <div style="display:grid;grid-template-columns:repeat(3,auto);gap:8px;justify-items:center;">
                       <button id="modeMouse" class="btn active" title="Mouse mode">🖱️</button>
-                      <button id="modeFill" class="btn" title="Black cells (filled)">⚫</button>
-                      <button id="modeMark" class="btn" title="White cells (marked)">⚪</button>
-                      <button id="modeErase" class="btn" title="Erase cells (clear)">🧽</button>
-                      <button id="modeCross" class="btn" title="Cross cells (marked)">✏️</button>
+                        <button id="modeFill" class="btn" title="Black cells (filled)">⚫</button>
+                        <button id="modeMark" class="btn" title="White cells (marked)">⚪</button>
+                        <button id="modeErase" class="btn" title="Erase cells (clear)">🧽</button>
+                        <button id="modeCross" class="btn" title="Cross cells (marked)">✏️</button>
+                        <button id="modeTip" class="btn" title="Tip">💡</button>
+
                     </div>
                   </div>
               </fieldset>
 
-              <div class="legend">Mode: <span id="modeLabel">Black</span>  |  Timer: <span id="timerLabel">00:00</span></div>
+
+              <div> Timer: <span id="timerLabel">00:00</span></div>
 
               <div style="display:flex;gap:8px;">
                   <button id="resetBtn" class="btn reset">Reset</button>
@@ -45,7 +48,7 @@
             <div class="legend">Correct: <span id="correctCount">—</span></div>
             <div class="legend">Next unlock: <span id="nextUnlockCount">—</span></div>
             <div class="legend">In logic: <span id="inLogicCount">—</span></div>
-            <div class="legend">Puzzle: <span id="labelMode"></span> <a id="puzzleName" class="puzzle-link" style="color:#afb2b7;text-decoration:underline;">—</a></div>
+            <div class="legend">Puzzle: <span id="labelMode"></span></div>
 
         </div>
 
