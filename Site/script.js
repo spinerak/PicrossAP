@@ -1,51 +1,52 @@
 
-const audio1 = new Audio('b1.ogg');
 
-function startEverything(pathToPuzzle) {
 
-    
+// Function to get URL parameters
+function getUrlParameter(name) {
+    name = name.replace(/[\[]/, '\\[').replace(/[\]]/, '\\]');
+    var regex = new RegExp('[\\?&]' + name + '=([^&#]*)');
+    var results = regex.exec(location.search);
+    return results === null ? '' : decodeURIComponent(results[1].replace(/\+/g, ' '));
+};
+
+function startEverything(puzzle) {
+    function parsePythonDict(python_dict) {
+        // This is a very naive parser and assumes the input is well-formed
+        const jsonString = python_dict;
+        return JSON.parse(jsonString);
+    }
+
+    puzzle = parsePythonDict(puzzle);
+    console.log('Starting puzzle', puzzle);
+
     // Derived sizes
-    let topClues;
-    let leftClues;
-    let COLS;
-    let ROWS;
+    let topClues = puzzle['C'][0];
+    let leftClues = puzzle['C'][1];
+    let COLS = topClues.length;
+    let ROWS = leftClues.length;
 
-    let solution;
+
+    let solution = puzzle['S'];
+    window.unlock_order = puzzle['G'];
+    window.unlock_keys = [0];
+    for (const k of window.unlock_order){
+        const value_to_add = k[1]
+        if(!window.unlock_keys.includes(value_to_add)){
+            window.unlock_keys.push(value_to_add);
+        }
+    }
+
     let highScore = -1; // start -1 so score 0 counts as a new high score the first time
+    let highScoreCheckpoint = -1;
     
-    const correctCountEl = document.getElementById('correctCount');
+    const filledCountEl = document.getElementById('filledCount');
     const nextUnlockCountEl = document.getElementById('nextUnlockCount');
     const inLogicCountEl = document.getElementById('inLogicCount');
 
-
-
-    (function(){
-        // synchronous XHR so rest of script can rely on CLUES immediately
-        const req = new XMLHttpRequest();
-        req.open('GET', 'puzzles/' + pathToPuzzle, false);
-        req.overrideMimeType('application/json');
-        req.send(null);
-        const ok = (req.status === 200) || (req.status === 0 && req.responseText);
-        if(!ok){
-            alert('This puzzle could not be loaded. Might be because I had to delete it, sorry about that...');
-            throw new Error('puzzle not loaded');
-        } 
-        const data = JSON.parse(req.responseText || '{}');
-
-        // accept multiple possible key styles
-        topClues = data.T || [];
-        leftClues = data.L || [];
-        COLS = topClues.length;
-        ROWS = leftClues.length;
-        solution = data.S || [];
-        // unlock/giveaway may be named "give_away" in your example
-        window.unlock_order = data.G || {};
-
-        updateNextUnlockCount();
+    updateNextUnlockCount();
         
-        console.log('Loaded puzzle', topClues, leftClues, solution, window.unlock_order);
+    console.log('Loaded puzzle', topClues, leftClues, solution, window.unlock_order);
 
-    })();
 
 
     /* UI elements */
@@ -56,20 +57,18 @@ function startEverything(pathToPuzzle) {
     const btnMark = document.getElementById('modeMark'); // White
     const btnErase = document.getElementById('modeErase'); // Erase
     const btnCross = document.getElementById('modeCross'); // Cross
-    const modeLabel = document.getElementById('modeLabel');
     const resetBtn = document.getElementById('resetBtn');
 
     let maxTopRows = Math.max(0, ...topClues.map(a=>a.length));
     let maxLeftNumbers = Math.max(0, ...leftClues.map(a=>a.length));
+
 
     /* set CSS variables */
     /* compute left clue width to match number of left-clue columns * cell-size so gaps match top clues */
     const root = document.documentElement;
     root.style.setProperty('--cols', COLS);
     root.style.setProperty('--rows', ROWS);
-    root.style.setProperty('--left-clue-cols', maxLeftNumbers);
-    root.style.setProperty('--top-clue-rows', maxTopRows);
-    console.log(COLS, ROWS, maxLeftNumbers, maxTopRows);
+    
     // compute cell size in JS and set as static px value
     function updateCellSize(){
         const controlsEl = document.getElementById('controls') || document.querySelector('.controls');
@@ -110,7 +109,7 @@ function startEverything(pathToPuzzle) {
     // }
 
 
-    /* State: 0 empty, 1 filled(black), 3 marked (white) */
+    /* State: 0 empty, 1 filled(black), -1 marked (white) */
     let cells = new Array(ROWS).fill(0).map(()=>new Array(COLS).fill(0));
     let drawing = false;
     let drawAction = 'mouse'; // 'black' or 'white' or 'erase'
@@ -181,8 +180,7 @@ function startEverything(pathToPuzzle) {
 
                 const el = document.createElement('div');
                 el.className = 'clue-cell top';
-                // keep the real number in dataset, display depends on revealed flag
-                el.dataset.real = String(num);
+                
                 el.dataset.type = 'top';
                 el.dataset.col = c;
                 el.dataset.index = i;
@@ -224,7 +222,7 @@ function startEverything(pathToPuzzle) {
 
                 const el = document.createElement('div');
                 el.className = 'clue-cell left';
-                el.dataset.real = String(num);
+                
                 el.dataset.type = 'left';
                 el.dataset.row = r;
                 el.dataset.index = i;
@@ -294,12 +292,14 @@ function startEverything(pathToPuzzle) {
     /* Helper to set class based on state */
     function applyCellClass(el, state){
         el.classList.toggle('filled', state===1);
-        el.classList.toggle('marked', state===3);
+        el.classList.toggle('marked', state===-1);
         el.classList.toggle('cross', state===0.5);
+        el.classList.toggle('cross2', state===0.6);
     }
 
+
     /* Reveal helper: updates revealed arrays and DOM */
-    function revealTopClue(colIndex, itemIndex = null){
+    function revealTopClue(colIndex, itemIndex, value){
         if(colIndex < 0 || colIndex >= topClues.length) return;
         if(itemIndex === null){
             // reveal whole column
@@ -313,14 +313,14 @@ function startEverything(pathToPuzzle) {
         nodes.forEach(n=>{
             const idx = Number(n.dataset.index);
             if(topRevealed[colIndex][idx] && itemIndex == idx){
-                n.textContent = n.dataset.real;
-                n.title = `Column ${colIndex+1} clue ${n.dataset.real}`;
+                n.textContent = value;
+                n.title = `Column ${colIndex+1} clue ${value}`;
                 n.classList.add('new');
             }
         });
     }
 
-    function revealLeftClue(rowIndex, itemIndex = null){
+    function revealLeftClue(rowIndex, itemIndex, value){
         if(rowIndex < 0 || rowIndex >= leftClues.length) return;
         if(itemIndex === null){
             for(let i=0;i<leftClues[rowIndex].length;i++) leftRevealed[rowIndex][i] = true;
@@ -332,11 +332,20 @@ function startEverything(pathToPuzzle) {
         nodes.forEach(n=>{
             const idx = Number(n.dataset.index);
             if(leftRevealed[rowIndex][idx] && itemIndex == idx){
-                n.textContent = n.dataset.real;
-                n.title = `Row ${rowIndex+1} clue ${n.dataset.real}`;
+                n.textContent = value;
+                n.title = `Row ${rowIndex+1} clue ${value}`;
                 n.classList.add('new');
             }
         });
+    }
+
+    
+    function revealClue(side, lineIndex, itemIndex, value){
+        if(side === 0){
+            revealTopClue(lineIndex, itemIndex, value);
+        } else {
+            revealLeftClue(lineIndex, itemIndex, value);
+        }
     }
 
     /* Apply unlocks for a given score value.
@@ -345,40 +354,52 @@ function startEverything(pathToPuzzle) {
     side: 0 => top (column), 1 => left (row).
     We'll reveal the entire clue line when unlocking.
     */
-    function applyUnlocksForScore(index){
-        let kp = null;
-        if(Array.isArray(window.unlock_order)){
-            kp = window.unlock_order[index];
-        } else if(window.unlock_order && typeof window.unlock_order === 'object'){
-            const keys = Object.keys(window.unlock_order)
-                .map(k=>Number(k))
-                .filter(k=>!isNaN(k))
-                .sort((a,b)=>a-b);
-            const key = keys[index];
-            if(key !== undefined) kp = window.unlock_order[String(key)];
-        }
-        if(!kp) return;
-        // kp may be an array of unlock tuples
-        if(!Array.isArray(kp)) return;
-        // remove 'new' class from previously revealed clues
+
+    let highestUnlocked = -1;
+    function applyUnlocksForScore(nclues){
+        // if(nclues <= highestUnlocked) return;
+
         const newEls = boardGrid.querySelectorAll('.clue-cell.new');
         newEls.forEach(el=>el.classList.remove('new'));
 
+        const val_to_unlock = window.unlock_keys[nclues];
+        console.log('Applying unlocks for score', nclues, '=>', val_to_unlock);
 
-        for(const u of kp){
-            if(!u || !Array.isArray(u)) continue;
-            const side = Number(u[0]);
-            const lineIndex = Number(u[1]);
-            const hintIndex = Number(u[2]);
-            if(isNaN(side) || isNaN(lineIndex) || isNaN(hintIndex)) continue;
-            if(side === 0){
-                revealTopClue(lineIndex, hintIndex);
-            } else {
-                revealLeftClue(lineIndex, hintIndex);
+        let ready_to_unlock = false;
+        for(const v of window.unlock_order){
+            if(ready_to_unlock){
+                // console.log('Applying unlock for score', nclues, v);
+                const u = v[0];
+                if(u){
+                    const side = Number(u[0]);
+                    const lineIndex = Number(u[1]);
+                    const hintIndex = Number(u[2]);
+                    if(isNaN(side) || isNaN(lineIndex) || isNaN(hintIndex)) continue;
+                    revealClue(side, lineIndex, hintIndex, u[3]);
+                }
+                if(v[1] > val_to_unlock){
+                    break;
+                }
+            }
+            if(v[1] == val_to_unlock){
+                ready_to_unlock = true;
             }
         }
+        highestUnlocked = nclues;
+        console.log(nclues, window.nclues)
+        if(window.unlock_keys[nclues+1] == window.unlock_keys[window.nclues]){
+            // console.log('in logic update: done!', window.unlock_keys[nclues+1], window.unlock_keys[window.nclues]);
+            inLogicCountEl.textContent = `${window.unlock_keys[nclues+1] === undefined ? 'done!' : window.unlock_keys[nclues+1]}`;
+        }else{
+            // console.log('in logic update:', window.unlock_keys[nclues+1], window.unlock_keys[window.nclues]);
+            if(window.unlock_keys[window.nclues] === undefined){
+                inLogicCountEl.textContent = `${window.unlock_keys[nclues+1]} now (${window.unlock_keys[window.nclues-1]} total)`;
+            }else{
+                inLogicCountEl.textContent = `${window.unlock_keys[nclues+1]} now (${window.unlock_keys[window.nclues]} total)`;
+            }
+        }
+        
     }
-    window.applyUnlocksForScore = applyUnlocksForScore;
 
     /* Decide action from event (mouse middle-click => erase; right-click => white; left => black; touch/pen use UI mode) */
     function decideActionFromEvent(ev){
@@ -400,67 +421,153 @@ function startEverything(pathToPuzzle) {
     let lastCellSetV = -1;
 
     /* Set a cell state with given action */
-    function setCellState(r,c,action){
-        if(r<0||r>=ROWS||c<0||c>=COLS) return;
-        if(r === lastCellSetR && c === lastCellSetC && action === lastCellSetV){
-            return;
+    function setCellState(r,c,action,force=false){
+        let prev;
+        if(!force){
+            if(r<0||r>=ROWS||c<0||c>=COLS) return;
+            if(r === lastCellSetR && c === lastCellSetC){
+                if(action === lastCellSetV){
+                    // console.log('skipping setCellState due to repeat', r, c, action);
+                    return;
+                }
+            }
+            if(action != drawActionMouse){
+                // console.log('skipping setCellState due to action mismatch', action, drawActionMouse);
+                return;
+            }
+            lastCellSetR = r;
+            lastCellSetC = c;
+            lastCellSetV = action;
+            prev = cells[r][c];
+            if(action !== 'erase' && !(action === 'cross' && (prev === 0.5 || prev === 0.6)) && replacing_color !== prev){
+                lastCellSetR = -1;
+                return;
+            }
         }
-        if(action != drawActionMouse){
-            console.log('skipping setCellState due to action mismatch', action, drawActionMouse);
-            return;
-        }
-        lastCellSetR = r;
-        lastCellSetC = c;
-        lastCellSetV = action;
 
-        const prev = cells[r][c];
-        if(action !== 'erase' && replacing_color !== prev){
-            return;
-        }
 
         // play b1.ogg
+        const audio1 = new Audio('b1.ogg');
         audio1.volume = .4;
         audio1.play();
         
         let newState;
         if(action === 'black') newState = 1;
-        else if(action === 'white') newState = 3;
+        else if(action === 'white') newState = -1;
         else if(action === 'erase') newState = 0;
-        else if(action === 'cross') newState = 0.5;
+        else if(action === 'cross'){
+            if(cells[r][c] === 0.5){
+                newState = 0.6;
+            }else{
+                newState = 0.5;
+            }
+        } 
         else return;
         if(prev === newState) return;
         cells[r][c] = newState;
         // find the cell element by data attributes
         const sel = `div[data-role="cell"][data-r="${r}"][data-c="${c}"]`;
         const cellEl = boardGrid.querySelector(sel);
-        if(cellEl) applyCellClass(cellEl, newState);
+        if(cellEl){
+            applyCellClass(cellEl, newState);
+        }
 
         // update correct count if solution present
-        updateCorrectCount();
+        checkAndUpdate();
     }
+
+    function solveUntil(n){
+        for(let r=0;r<ROWS;r++){
+            for(let c=0;c<COLS;c++){
+                const solRow = solution[r] || new Array(COLS).fill(0);
+                const sol = solRow[c];
+                if(sol[1] <= n){
+                    const st = sol[0];
+                    setCellState(r,c, st === 1 ? 'black' : 'white', true);
+                }
+            }
+        }
+    }
+    window.solveUntil = solveUntil;
 
     /* Update correct markings count.
     We treat a cell as correct when:
         - it's filled (state===1) and the solution for that position is truthy
-        - OR it's marked (state===3) and the solution for that position is falsy (0/undefined)
+        - OR it's marked (state===-1) and the solution for that position is falsy (0/undefined)
     If solution missing or size mismatch we show "—".
     */
-    function updateCorrectCount(){
+    function checkAndUpdate(showTip=false){
         if(!solution || !Array.isArray(solution) || solution.length !== ROWS){
-            correctCountEl.textContent = '—';
+            filledCountEl.textContent = '—';
             nextUnlockCountEl.textContent = '—';
             inLogicCountEl.textContent = '—';
             return;
         }
         let correct = 0;
 
+        let filled = 0;
+        let lowest_incorrect = Infinity;
+        let list_incorrect = [];
+        let loc_lowest_notknown = null;
+        let highest_correct = 0;
         for(let r=0;r<ROWS;r++){
             const solRow = solution[r] || new Array(COLS).fill(0);
             for(let c=0;c<COLS;c++){
-                const sol = solRow[c]; // expected values matching state: 0 or 1/3 etc. We'll compare strictly
+                const sol = solRow[c]; // expected values matching state: 0 or 1/-1 etc. We'll compare strictly
                 const st = cells[r][c];
-                if(sol === st) correct++;
+                if(st == 1 || st == -1){
+                    filled += 1;
+                }
+                if(sol[0] === st){
+                    if(sol[1] > highest_correct){
+                        highest_correct = sol[1];
+                    }
+                }else{
+                    if(st !== 0 && st !== 0.5){
+                        list_incorrect.push([r,c]);
+                    }
+                    if(sol[1] < lowest_incorrect){
+                        lowest_incorrect = sol[1];
+                        loc_lowest_notknown = [r,c,sol[2]];
+                    }
+                }
             }
+        }
+        // update amount filled
+        filledCountEl.textContent = filled + ' / ' + (ROWS * COLS);
+
+
+        function markCellAsTip(r,c,cls){
+            const sel = `div[data-role="cell"][data-r="${r}"][data-c="${c}"]`;
+            const cellEl = boardGrid.querySelector(sel);
+            if(cellEl){
+                cellEl.classList.add(cls);
+                setTimeout(()=>cellEl.classList.remove(cls), 2000);
+            }
+        }
+
+        correct = lowest_incorrect === Infinity ? highest_correct : (lowest_incorrect - 1);
+        if(showTip){
+            if(list_incorrect.length > 0){
+                // pick a random incorrect cell to highlight
+                const idx = Math.floor(Math.random() * list_incorrect.length);
+                const [r,c] = list_incorrect[idx];
+                markCellAsTip(r,c,'tip-wrong');
+            }else{
+                if(loc_lowest_notknown === null) return;
+                const [r,c,s] = loc_lowest_notknown;
+                if (s == 0){
+                    for (let rr=0;rr<ROWS;rr++){
+                        markCellAsTip(rr,c,'tip-next');
+                    }
+                }
+                if (s == 1){
+                    for (let cc=0;cc<COLS;cc++){
+                        markCellAsTip(r,cc,'tip-next');
+                    }
+                }
+            }
+            return;
         }
         
 
@@ -470,13 +577,17 @@ function startEverything(pathToPuzzle) {
             if(window.is_connected && window.unlock_order){
                 // if highscore is one of the keys in window.unlock_order, find the how many'th that is,
                 // then call findAndDetermineChecks with that index
-                const scores = Object.keys(window.unlock_order).map(k=>Number(k)).sort((a,b)=>a-b);
-                // console.log(scores);
-                if(scores.includes(highScore)){
-                    const index = scores.indexOf(highScore);
+
+                if(window.unlock_keys.includes(highScore)){
+                    const index = window.unlock_keys.indexOf(highScore);
+                    console.log('New high score!', highScore, 'at index', index, 'in unlock keys', window.unlock_keys);
                     window.findAndDetermineChecks(index);
+
+                    if(correct > highScoreCheckpoint){
+                        highScoreCheckpoint = correct;
+                    }
                     
-                    if(highScore === scores[scores.length - 1]){
+                    if(highScore === window.unlock_keys[window.unlock_keys.length - 1]){
                         // if(COLS*ROWS > 64){
                             showRoss();
                         // }
@@ -485,8 +596,23 @@ function startEverything(pathToPuzzle) {
                 }
             }
         }
-        correctCountEl.textContent = correct + ' / ' + (ROWS * COLS);
+
+        console.log('Correct count:', correct, 'nclues:', window.nclues, 'max', window.unlock_keys.length - 1);
+        for(let i = 0; i <= window.unlock_keys.length; i++){
+            if(correct >= window.unlock_keys[Math.min(i, window.unlock_keys.length - 1)] && window.nclues > i){
+                // console.log('Updating nclues', window.nclues, 'to', i, 'for score', window.unlock_keys[i]);
+                applyUnlocksForScore(i);
+            }
+        }
+        
+        window.setCheckpoint(highScoreCheckpoint);
     }
+
+    document.getElementById('modeTip').addEventListener('click', ()=>{
+        // find first incorrect cell and highlight it briefly
+        checkAndUpdate(true);
+    });
+    window.checkAndUpdate = checkAndUpdate;
 
     function showRoss(){
         // thanks palex
@@ -571,8 +697,7 @@ function startEverything(pathToPuzzle) {
         let missing = 68;
         while(seen.has(missing)) missing++;
         const X = missing - 67; // 1-based
-        const keys = Object.keys(window.unlock_order).map(Number).filter(k => !isNaN(k)).sort((a,b) => a - b);
-        best_correct = (keys[X] !== undefined) ? keys[X] : 'done!';
+        best_correct = (window.unlock_keys[X] !== undefined) ? window.unlock_keys[X] : 'done!';
         nextUnlockCountEl.textContent = best_correct;
     }
     window.updateNextUnlockCount = updateNextUnlockCount;
@@ -643,11 +768,6 @@ function startEverything(pathToPuzzle) {
     btnErase.addEventListener('click', ()=>setMode('erase'));
     btnCross.addEventListener('click', ()=>setMode('cross'));
     function updateModeUILabel(){
-        let label = 'Black';
-        if(drawAction === 'white') label = 'White';
-        else if(drawAction === 'erase') label = 'Erase';
-        else if(drawAction === 'mouse') label = 'Mouse';
-        modeLabel.textContent = label;
         btnMouse.classList.toggle('active', drawAction === 'mouse');
         btnFill.classList.toggle('active', drawAction === 'black');
         btnMark.classList.toggle('active', drawAction === 'white');
@@ -719,11 +839,32 @@ function startEverything(pathToPuzzle) {
 
     /* initialize board */
     buildBoardGrid();
-    // treat score 0 as new highscore on first load: reveal any unlocks for 0
-    // applyUnlocksForScore(0);
     updateModeUILabel();
-    updateCorrectCount();
+    checkAndUpdate();
 }
+
+// keyboard shortcuts for modes 1-4
+(function(){
+    const keyMap = { '1':'modeFill', '2':'modeMark', '3':'modeErase', '4':'modeCross' };
+    function activate(id){
+    const btn = document.getElementById(id); if(!btn) return;
+    // prefer triggering existing click handlers
+    btn.click();
+    // ensure visual active state
+    const row = btn.closest('.mode-row'); if(!row) return;
+    row.querySelectorAll('.btn').forEach(b => b.classList.toggle('active', b === btn));
+    }
+    document.addEventListener('keydown', e => {
+    const tgt = e.target;
+    if (tgt && (tgt.tagName === 'INPUT' || tgt.tagName === 'TEXTAREA' || tgt.isContentEditable)) return;
+    if (keyMap[e.key]) { activate(keyMap[e.key]); e.preventDefault(); }
+    });
+})();
+
+
+
+
+
 
 window.startEverything = startEverything;
 // startEverything('puzzles\\p_10_10_5_7.json');
