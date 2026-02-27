@@ -356,9 +356,8 @@ function startEverything(puzzle) {
     We'll reveal the entire clue line when unlocking.
     */
 
-    let highestUnlocked = -1;
     function applyUnlocksForScore(nclues){
-        // if(nclues <= highestUnlocked) return;
+        window.ncluesshown = Math.max(window.ncluesshown || 0, nclues + 1);
 
         const newEls = boardGrid.querySelectorAll('.clue-cell.new');
         newEls.forEach(el=>el.classList.remove('new'));
@@ -385,7 +384,7 @@ function startEverything(puzzle) {
                 // console.log('Found unlock point for score', nclues, v);
             }
         }
-        highestUnlocked = nclues;
+        
         if(window.unlock_keys[nclues+1] == window.unlock_keys[window.nclues]){
             // console.log('in logic update: done!', window.unlock_keys[nclues+1], window.unlock_keys[window.nclues]);
             inLogicCountEl.textContent = `${window.unlock_keys[nclues+1] === undefined ? 'done!' : window.unlock_keys[nclues+1]}`;
@@ -447,8 +446,10 @@ function startEverything(puzzle) {
             }
             
             if (action == 'white' || action == 'black'){
-                console.log('checking unlock for', nclues, window.unlock_keys);
-                if (sol[1] > window.unlock_keys[Math.min(nclues, window.unlock_keys.length - 1)]){
+                console.log('checking unlock for', window.ncluesshown, window.unlock_keys, sol[1], 
+                    window.unlock_keys[Math.min(window.ncluesshown, window.unlock_keys.length - 1)]);
+                // inLogicCountEl.textContent = `${window.unlock_keys[nclues+1]} now (${window.unlock_keys[window.nclues]} total)`;
+                if (sol[1] > window.unlock_keys[Math.min(window.ncluesshown, window.unlock_keys.length - 1)]){
                     action = 'error';
                 }
             }
@@ -509,12 +510,16 @@ function startEverything(puzzle) {
         }
     }
 
-    window.ncorrect_server = 10000;
+    window.ncorrect_server = 0;
     function gotSaveData(savedata){
         console.log('gotSaveData', savedata);
         if(!savedata || savedata === 'null'){
             console.log('No save data found, starting fresh');
             window.ncorrect_server = 0;
+            return;
+        }
+        if(savedata[0] <= window.ncorrect_server){
+            console.log('Save data correct count', savedata[0], 'is not higher than current ncorrect_server', window.nfilled, ', ignoring save data');
             return;
         }
         window.ncorrect_server = savedata[0];
@@ -579,6 +584,7 @@ function startEverything(puzzle) {
 
         // update amount filled
         filledCountEl.textContent = filled + ' / ' + (ROWS * COLS);
+        window.nfilled = filled;
 
         function markCellAsTip(r,c,cls){
             const sel = `div[data-role="cell"][data-r="${r}"][data-c="${c}"]`;
@@ -591,7 +597,7 @@ function startEverything(puzzle) {
 
         if(showTip){
             if(loc_lowest_notknown === null) return;
-            if(lowest_incorrect > window.unlock_keys[Math.min(nclues, window.unlock_keys.length - 1)]) return;
+            if(lowest_incorrect > window.unlock_keys[Math.min(window.ncluesshown, window.unlock_keys.length - 1)]) return;
             const [r,c,s] = loc_lowest_notknown;
             if (s == 0){
                 for (let rr=0;rr<ROWS;rr++){
@@ -738,7 +744,7 @@ function startEverything(puzzle) {
     }
 
     function updateNextUnlockCount(){
-        console.log(window.unlock_keys, window.checked_locations, window.missing_locations);
+        // console.log(window.unlock_keys, window.checked_locations, window.missing_locations);
         // set nextUnlockCountEl text to the minimum of window.missing_locations, minus 67. If it's empty, set to "done!"
         if(window.missing_locations && window.missing_locations.length > 0){
             const nextUnlock = Math.min(...window.missing_locations);
