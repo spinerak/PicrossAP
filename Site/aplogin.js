@@ -175,7 +175,11 @@ function startAP(puzzle_dict){
         }
         if (got_any) {
             const audio2 = new Audio('ding.mp3');
-            audio2.volume = .4;
+            let audiovolume = parseFloat(localStorage.getItem('alertVolume') || 0.3);
+            if (isNaN(audiovolume) || audiovolume <= 0) {
+                return;
+            }
+            audio2.volume = audiovolume;
             audio2.play();
         }
     }
@@ -372,6 +376,12 @@ function startAP(puzzle_dict){
     }
 
     function showLogMessage(){
+        let messageDuration = (parseFloat(localStorage.getItem('messageDuration') || 5)) * 1000;
+        console.log("Message duration (ms):", messageDuration);
+        if (isNaN(messageDuration) || messageDuration <= 0) {
+            return;
+        }
+        console.log("Showing log message, queue length:", window.queue.length);
         if(!window.queue || window.queue.length === 0){
             let container = document.getElementById('temporaryPopup');
             if (container && container.childElementCount === 0 && container.parentElement) container.parentElement.removeChild(container);
@@ -417,17 +427,20 @@ function startAP(puzzle_dict){
             } else {
                 if (container.childElementCount === 0 && container.parentElement) container.parentElement.removeChild(container);
             }
-        }, 5000 / Math.max(1, window.queue.length));
+        }, messageDuration / Math.max(1, window.queue.length));
     }
 
-    function findAndDetermineChecks(total){
-        console.log("Finding and determining checks for total:", total);
-        sendCheck(67 + total);
-        if(!window.checked_locations.includes(67 + total)){
-            window.checked_locations.push(67 + total);
-        }
-        if (window.missing_locations.includes(67 + total)){
-            window.missing_locations.splice(window.missing_locations.indexOf(67 + total), 1);
+    function findAndDetermineChecks(prev, total){
+        console.log("Finding and determining checks from ", prev, " to ", total);
+        for (let i = prev; i <= total; i++){
+            console.log("Finding and determining checks for total:", i);
+            sendCheck(67 + i);
+            if(!window.checked_locations.includes(67 + i)){
+                window.checked_locations.push(67 + i);
+            }
+            if (window.missing_locations.includes(67 + i)){
+                window.missing_locations.splice(window.missing_locations.indexOf(67 + i), 1);
+            }
         }
         window.updateNextUnlockCount();
     }
@@ -442,14 +455,21 @@ function startAP(puzzle_dict){
                 console.log("Solo mode, pretending to check ", key);
                 gotClue();
                 const audio2 = new Audio('ding.mp3');
-                audio2.volume = .3;
+                let audiovolume = parseFloat(localStorage.getItem('alertVolume') || 0.3);
+                if (isNaN(audiovolume) || audiovolume <= 0) {
+                    return;
+                }
+                audio2.volume = audiovolume;
                 audio2.play();
                 return;
             }
+            console.log("Maybe sending check for ", key);
             if (window.missing_locations.includes(key)){
                 client.check(parseInt(key));
+                console.log("Sent check for ", key);
+            }else{
+                console.log("Not sending check for ", key, " because it's not in missing locations:", window.missing_locations);
             }
-            console.log("Sent check for ", key);
         }
     }
     function sendGoal(){

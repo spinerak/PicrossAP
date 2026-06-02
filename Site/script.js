@@ -52,6 +52,7 @@ function startEverything(puzzle) {
     updateNextUnlockCount();
         
     console.log('Loaded puzzle', topClues, leftClues, solution, window.unlock_order);
+    console.log('Transposed solution:', solution[0].map((_, colIndex) => solution.map(row => row[colIndex])));
 
 
 
@@ -468,9 +469,14 @@ function startEverything(puzzle) {
 
         if(!force){
             // play b1.ogg
-            const audio1 = new Audio('b1.ogg');
-            audio1.volume = .4;
-            audio1.play();
+            let audiovolume = parseFloat(localStorage.getItem('alertVolume') || 0.4);
+            if (isNaN(audiovolume) || audiovolume <= 0) {
+                
+            }else{
+                const audio1 = new Audio('b1.ogg');
+                audio1.volume = audiovolume;
+                audio1.play();
+            }
         }
 
         let newState;
@@ -616,13 +622,13 @@ function startEverything(puzzle) {
 
         // track high score and apply unlocks when a new high is reached
         if(correct > highScore){
-            highScore = correct;
             if(window.is_connected && window.unlock_order){
                 // if highscore is one of the keys in window.unlock_order, find the how many'th that is,
                 // then call findAndDetermineChecks with that index
 
 
-                window.findAndDetermineChecks(highScore);
+                window.findAndDetermineChecks(highScore, correct);
+                highScore = correct;
                 
                 if(highScore === window.unlock_keys[window.unlock_keys.length - 1]){
                     showRoss();

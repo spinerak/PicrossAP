@@ -477,12 +477,40 @@ document.getElementById('fullScreen').addEventListener('click', (e) => {
             </fieldset>
         </div>
 
+    <!-- Please add two settings, that will be stored to local storage and upon loading will be set to their previous values -->
+    <!-- One for the volume of the alerts, make it a slider from 0 to 1. And then a slider from 0 to 10 how long messages are displayed -->
+    <div style="margin-top:12px;">
+        <label for="alertVolume" class="login-label">Alert Volume</label>
+        <input type="range" id="alertVolume" name="alertVolume" min="0" max="0.5" step="0.01" value="0.3">
+        <label for="messageDuration" class="login-label">Item message duration (0-10 seconds)</label>
+        <input type="range" id="messageDuration" name="messageDuration" min="0" max="10" step="0.5" value="5">
+    </div>
+
     <div style="font-size:6px;color:#888;margin-top:8px;">
       b1.ogg by Pellepyb -- https://freesound.org/s/431671/ -- License: Creative Commons 0
       Ringing bell - happy.wav by domrodrig -- https://freesound.org/s/116779/ -- License: Creative Commons 0
     </div>
     </div>
 </div>
+
+<!-- script stuff for settings-->
+<script>
+    // Load settings from localStorage
+    const alertVolumeSlider = document.getElementById('alertVolume');
+    const messageDurationSlider = document.getElementById('messageDuration');
+
+    alertVolumeSlider.value = localStorage.getItem('alertVolume') || 0.3;
+    messageDurationSlider.value = localStorage.getItem('messageDuration') || 5;
+
+    // Save settings to localStorage when changed
+    alertVolumeSlider.addEventListener('input', () => {
+        localStorage.setItem('alertVolume', alertVolumeSlider.value);
+    });
+
+    messageDurationSlider.addEventListener('input', () => {
+        localStorage.setItem('messageDuration', messageDurationSlider.value);
+    });
+</script>
 
 
 <!-- Main application script -->
