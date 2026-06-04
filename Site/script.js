@@ -626,9 +626,9 @@ function startEverything(puzzle) {
                 // if highscore is one of the keys in window.unlock_order, find the how many'th that is,
                 // then call findAndDetermineChecks with that index
 
-
-                window.findAndDetermineChecks(highScore, correct);
+                let pvh = highScore;
                 highScore = correct;
+                window.findAndDetermineChecks(pvh, correct);
                 
                 if(highScore === window.unlock_keys[window.unlock_keys.length - 1]){
                     showRoss();

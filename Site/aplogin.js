@@ -432,7 +432,7 @@ function startAP(puzzle_dict){
 
     function findAndDetermineChecks(prev, total){
         console.log("Finding and determining checks from ", prev, " to ", total);
-        for (let i = prev; i <= total; i++){
+        for (let i = prev+1; i <= total; i++){
             console.log("Finding and determining checks for total:", i);
             sendCheck(67 + i);
             if(!window.checked_locations.includes(67 + i)){
@@ -449,7 +449,7 @@ function startAP(puzzle_dict){
     function sendCheck(key){
         if(window.is_connected){
             if(window.solo){
-                if(!window.unlock_keys.includes(key-67)){
+                if(!window.unlock_keys.includes(key-67) || key <= 67){
                     return;
                 }
                 console.log("Solo mode, pretending to check ", key);
