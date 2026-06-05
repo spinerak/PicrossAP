@@ -205,6 +205,7 @@ function startAP(puzzle_dict){
         const apworld = packet.slot_data.apworld_version;
         window.slot = packet.slot;
         console.log("AP World Version: ", apworld);
+        let addextraclue = false;
         if(apworld == "0.0.3"){
             alert("A new apworld is out. You will be redirected to an older version of the game that is compatible.");
             window.location.href = "https://nonogram.netlify.app/";
@@ -226,6 +227,7 @@ function startAP(puzzle_dict){
                 alert("A new apworld is out! Your version has a slight logic error and the logic thought you had one more clue than you actually have. You can send yourself one clue to fix this :p");
                 localStorage.setItem("referredFrom03", true);
             }
+            addextraclue = true;
         }
 
         const haveclues = packet.slot_data.enables_nonograhmm_hints;
@@ -259,6 +261,10 @@ function startAP(puzzle_dict){
             console.log("notify", key, value, oldValue);
             window.gotSaveData( value);
         });
+
+        if (addextraclue){
+            gotClue();
+        }
 
     };
 
